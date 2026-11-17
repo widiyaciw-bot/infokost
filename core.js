@@ -206,7 +206,7 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH DENGAN KONFIRMASI EMAIL ====================
+// ==================== AUTH DENGAN KONFIRMASI LINK EMAIL ====================
 async function handleRegister(e) {
     e.preventDefault();
     const role = document.querySelector('input[name="reg-role"]:checked').value;
