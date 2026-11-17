@@ -170,11 +170,61 @@
                     <h2>Selamat Datang</h2>
                     <p>Masuk untuk melanjutkan ke KostSpace.</p>
                     <form onsubmit="handleLogin(event)">
-                        <div class="form-group"><label>Email</label><input type="email" id="login-email" required placeholder="email@example.com"></div>
-                        <div class="form-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="login-email" required placeholder="email@example.com">
+                        </div>
+                        <div class="form-group">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <label style="margin-bottom:0;">Password</label>
+                                <a href="#" onclick="navigate('lupa-password')" style="font-size:0.82rem; color:var(--text-muted); text-decoration:underline;">Lupa kata sandi?</a>
+                            </div>
+                            <input type="password" id="login-password" required placeholder="••••••••">
+                        </div>
                         <button type="submit" class="btn btn-primary full-width">Masuk</button>
                     </form>
                     <p class="auth-footer">Belum punya akun? <a href="#" onclick="navigate('register')">Daftar</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7B. LUPA KATA SANDI -->
+        <section id="view-lupa-password" class="view-section">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="brand-logo center-logo">K</div>
+                    <h2>Lupa Kata Sandi</h2>
+                    <p>Masukkan email akun Anda. Kami akan mengirimkan tautan untuk membuat kata sandi baru.</p>
+                    <form onsubmit="handleForgotPassword(event)">
+                        <div class="form-group">
+                            <label>Email Terdaftar</label>
+                            <input type="email" id="forgot-email" required placeholder="email@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary full-width">Kirim Link Reset Password</button>
+                    </form>
+                    <p class="auth-footer"><a href="#" onclick="navigate('login')">&larr; Kembali ke halaman Masuk</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7C. BUAT KATA SANDI BARU -->
+        <section id="view-reset-password" class="view-section">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="brand-logo center-logo">K</div>
+                    <h2>Buat Kata Sandi Baru</h2>
+                    <p>Silakan masukkan kata sandi baru untuk akun KostSpace Anda.</p>
+                    <form onsubmit="handleUpdateNewPassword(event)">
+                        <div class="form-group">
+                            <label>Kata Sandi Baru (minimal 6 karakter)</label>
+                            <input type="password" id="new-password" minlength="6" required placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                            <label>Ulangi Kata Sandi Baru</label>
+                            <input type="password" id="confirm-new-password" minlength="6" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary full-width">Simpan Kata Sandi Baru</button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -321,3 +371,4 @@
     <script src="core.js"></script>
     <script src="pengguna.js"></script>
 </body>
+</html>
