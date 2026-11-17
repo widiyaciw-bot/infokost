@@ -295,6 +295,62 @@ async function deleteAccount() {
     window.location.href = 'index.html';
 }
 
+// ==================== FITUR LUPA & RESET KATA SANDI ====================
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/index.html'
+    });
+
+    if (error) {
+        showToast('Gagal mengirim email: ' + error.message);
+        return;
+    }
+
+    alert('Tautan reset kata sandi telah dikirim ke ' + email + '. Silakan cek kotak masuk atau folder Spam Anda.');
+    navigate('login');
+}
+
+async function handleUpdateNewPassword(e) {
+    e.preventDefault();
+    const newPass = document.getElementById('new-password').value;
+    const confirmPass = document.getElementById('confirm-new-password').value;
+
+    if (newPass !== confirmPass) {
+        showToast('Konfirmasi kata sandi tidak cocok!');
+        return;
+    }
+
+    const { data, error } = await db.auth.updateUser({
+        password: newPass
+    });
+
+    if (error) {
+        showToast('Gagal memperbarui kata sandi: ' + error.message);
+        return;
+    }
+
+    if (data && data.user && data.user.email) {
+        await db.from('users')
+            .update({ password: newPass })
+            .eq('email', data.user.email.toLowerCase());
+    }
+
+    await db.auth.signOut();
+    alert('Kata sandi berhasil diperbarui! Silakan masuk menggunakan kata sandi baru Anda.');
+    navigate('login');
+}
+
+db.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+        const resetView = document.getElementById('view-reset-password');
+        if (resetView) resetView.classList.add('active');
+    }
+});
+
 // ==================== PROFIL & CHAT BERSAMA ====================
 function switchProfilTab(tabName, btnEl) {
     document.querySelectorAll('.profil-tab').forEach(t => t.classList.remove('active'));
