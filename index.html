@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KostSpace - Cari, Sewa & Oper Kost Terpercaya</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="#" class="brand" onclick="navigate('beranda')">
+                <div class="brand-logo">K</div>
+                <div class="brand-text">
+                    <span class="brand-title">KostSpace</span>
+                    <span class="brand-sub">Cari, Sewa & Oper Kost</span>
+                </div>
+            </a>
+
+            <nav class="nav-links" id="nav-menu"></nav>
+            <div class="nav-actions">
+                <div id="nav-auth-area" style="display:flex; align-items:center; gap:10px;"></div>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Buka Menu">&#9776;</button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-content">
+        <!-- 1. BERANDA -->
+        <section id="view-beranda" class="view-section active">
+            <div class="hero-section">
+                <div class="container hero-content">
+                    <span class="pill-badge">PLATFORM CARI & OPER KOST</span>
+                    <h1>Temukan Kost Nyaman</h1>
+                    <p>Cari, sewa, dan oper kost dengan mudah untuk siapa saja. Semua kebutuhan hunian kost tersedia dalam satu platform.</p>
+                    <div class="hero-buttons">
+                        <button class="btn btn-primary" onclick="navigate('cari-kost')">Cari Kost</button>
+                        <button class="btn btn-outline" onclick="navigate('oper-kost')">Oper Kost</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container section-padding">
+                <div class="section-header">
+                    <div>
+                        <span class="sub-label">REKOMENDASI</span>
+                        <h2>Kost Terpopuler</h2>
+                    </div>
+                    <a href="#" class="link-arrow" onclick="navigate('cari-kost')">Lihat Semua &rarr;</a>
+                </div>
+                <div class="card-grid" id="beranda-kost-list"></div>
+            </div>
+        </section>
+
+        <!-- 2. CARI KOST -->
+        <section id="view-cari-kost" class="view-section">
+            <div class="container section-padding">
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <input type="text" id="search-kost-input" placeholder="Cari nama atau lokasi kost..." onkeyup="filterKost()">
+                    </div>
+                    <select id="filter-harga" onchange="filterKost()">
+                        <option value="all">Semua harga</option>
+                        <option value="low">&lt; Rp 1.000.000</option>
+                        <option value="mid">Rp 1.000.000 - Rp 1.500.000</option>
+                        <option value="high">&gt; Rp 1.500.000</option>
+                    </select>
+                    <select id="filter-fasilitas" onchange="filterKost()">
+                        <option value="all">Semua fasilitas</option>
+                        <option value="WI-FI">WI-FI</option>
+                        <option value="Kamar Mandi Dalam">Kamar Mandi Dalam</option>
+                        <option value="AC">AC</option>
+                    </select>
+                </div>
+                <div class="card-grid" id="katalog-kost-list"></div>
+            </div>
+        </section>
+
+        <!-- 3. DETAIL KOST / OPER KOST -->
+        <section id="view-detail-kost" class="view-section">
+            <div class="container section-padding">
+                <button class="btn-back" onclick="historyBack()">&larr; Kembali</button>
+                <div class="detail-wrapper" id="detail-kost-container"></div>
+            </div>
+        </section>
+
+        <!-- 4. FORM AJUKAN SEWA -->
+        <section id="view-ajukan-sewa" class="view-section">
+            <div class="container section-padding narrow-container">
+                <div class="form-card">
+                    <span class="sub-label">PENGAJUAN SEWA</span>
+                    <h2>Ajukan Sewa Kost</h2>
+                    <p id="sewa-kost-target" style="color:var(--text-muted); margin-bottom:16px;"></p>
+                    <form onsubmit="submitPengajuanSewa(event)">
+                        <div class="form-row">
+                            <div class="form-group"><label>Nama Lengkap</label><input type="text" id="sewa-nama" required></div>
+                            <div class="form-group"><label>Tanggal Masuk</label><input type="date" id="sewa-tanggal" required></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Nomor Telepon</label><input type="tel" id="sewa-telepon" required></div>
+                            <div class="form-group">
+                                <label>Durasi Bulan</label>
+                                <select id="sewa-durasi" required>
+                                    <option value="3 Bulan">3 Bulan</option>
+                                    <option value="6 Bulan">6 Bulan</option>
+                                    <option value="12 Bulan">12 Bulan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Pesan Untuk Pemilik Kost</label><textarea id="sewa-pesan" rows="3"></textarea></div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Kirim Pengajuan</button>
+                            <button type="button" class="btn btn-secondary" onclick="navigate('detail-kost')">Batal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. OPER KOST -->
+        <section id="view-oper-kost" class="view-section">
+            <div class="container section-padding">
+                <div class="section-header">
+                    <div>
+                        <span class="sub-label">OPER KOST</span>
+                        <h2>Kost yang Dioper</h2>
+                        <p class="subtitle">Temukan penghuni yang sedang mengoper sisa masa sewa kamar kost.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="handlePostingOperClick()">+ Posting Oper Kost</button>
+                </div>
+                <div class="card-grid" id="oper-kost-list"></div>
+            </div>
+        </section>
+
+        <!-- 6. POSTING OPER KOST -->
+        <section id="view-posting-oper" class="view-section">
+            <div class="container section-padding narrow-container">
+                <div class="form-card">
+                    <span class="sub-label">OPER KOST</span>
+                    <h2>Posting Kost yang Ingin Dioper</h2>
+                    <form id="form-oper" onsubmit="submitOperKost(event)">
+                        <div class="form-group"><label>Nama Kost</label><input type="text" id="oper-nama" required></div>
+                        <div class="form-group"><label>Lokasi</label><input type="text" id="oper-lokasi" required></div>
+                        <div class="form-group"><label>Harga Sewa (Rp / bulan)</label><input type="number" id="oper-harga" required></div>
+                        <div class="form-group"><label>Deskripsi & Sisa Masa Sewa</label><textarea id="oper-deskripsi" rows="3" required></textarea></div>
+                        <div class="form-group">
+                            <label>Upload Foto Kamar Kost</label>
+                            <div class="upload-box" onclick="document.getElementById('oper-foto-file').click()">
+                                <input type="file" id="oper-foto-file" accept="image/*" hidden onchange="previewUploadedImage(this, 'oper-preview-img', 'oper-upload-placeholder')">
+                                <div id="oper-upload-placeholder" class="upload-placeholder"><span>&#128247; Klik untuk memilih foto dari perangkat</span></div>
+                                <img id="oper-preview-img" class="upload-preview" style="display: none;" alt="Preview">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Posting Sekarang</button>
+                            <button type="button" class="btn btn-secondary" onclick="navigate('oper-kost')">Batal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. LOGIN -->
+        <section id="view-login" class="view-section">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="brand-logo center-logo">K</div>
+                    <h2>Selamat Datang</h2>
+                    <p>Masuk untuk melanjutkan ke KostSpace.</p>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group"><label>Email</label><input type="email" id="login-email" required placeholder="email@example.com"></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
+                        <button type="submit" class="btn btn-primary full-width">Masuk</button>
+                    </form>
+                    <p class="auth-footer">Belum punya akun? <a href="#" onclick="navigate('register')">Daftar</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. REGISTRASI -->
+        <section id="view-register" class="view-section">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="brand-logo center-logo">K</div>
+                    <h2>Buat Akun KostSpace</h2>
+                    <p>Pilih jenis akun sesuai kebutuhan Anda.</p>
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label>Daftar Sebagai</label>
+                            <div class="role-selector-cards">
+                                <label class="role-card-option">
+                                    <input type="radio" name="reg-role" value="pengguna" checked>
+                                    <div class="role-card-content">
+                                        <strong>&#128269; Pencari Kost</strong>
+                                        <small>Cari kost, ajukan sewa, &amp; oper kost.</small>
+                                    </div>
+                                </label>
+                                <label class="role-card-option">
+                                    <input type="radio" name="reg-role" value="pemilik">
+                                    <div class="role-card-content">
+                                        <strong>&#127968; Pemilik Kost</strong>
+                                        <small>Kelola unit kost &amp; terima penyewa.</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="reg-nama" required></div>
+                        <div class="form-group"><label>Nomor WhatsApp / Telepon</label><input type="tel" id="reg-telepon" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="reg-email" required></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="reg-password" required></div>
+                        <button type="submit" class="btn btn-primary full-width">Daftar Sekarang</button>
+                    </form>
+                    <p class="auth-footer">Sudah punya akun? <a href="#" onclick="navigate('login')">Masuk</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. PROFIL PENCARI KOST -->
+        <section id="view-profil" class="view-section">
+            <div class="dashboard-layout">
+                <aside class="sidebar">
+                    <div class="sidebar-menu">
+                        <button class="sidebar-item active" onclick="switchProfilTab('info', this)">&#128100; Profil</button>
+                        <button class="sidebar-item" onclick="switchProfilTab('edit', this)">&#9881; Edit Profil</button>
+                        <button class="sidebar-item" onclick="switchProfilTab('riwayat', this)">&#128276; Pengajuan Saya</button>
+                        <button class="sidebar-item" onclick="switchProfilTab('tersimpan', this)">&#9829; Kost Tersimpan</button>
+                    </div>
+                    <button class="sidebar-item logout-btn" onclick="logout()">&#10145; Keluar</button>
+                </aside>
+
+                <div class="dashboard-main">
+                    <div id="profil-tab-info" class="profil-tab active">
+                        <h2>Profil Pencari Kost</h2>
+                        <div class="info-card">
+                            <div class="info-grid">
+                                <div><span class="info-label">Nama</span><p class="info-val" id="disp-nama">-</p></div>
+                                <div><span class="info-label">Email</span><p class="info-val" id="disp-email">-</p></div>
+                                <div><span class="info-label">Nomor Telepon</span><p class="info-val" id="disp-telepon">-</p></div>
+                                <div><span class="info-label">Alamat</span><p class="info-val" id="disp-alamat">-</p></div>
+                            </div>
+                            <div class="right-align">
+                                <button class="btn btn-danger" onclick="deleteAccount()">Hapus Akun</button>
+                                <button class="btn btn-primary" onclick="switchProfilTab('edit')">Edit Profil</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="profil-tab-edit" class="profil-tab">
+                        <h2>Edit Profil</h2>
+                        <div class="info-card">
+                            <form onsubmit="saveProfil(event)">
+                                <div class="form-row">
+                                    <div class="form-group"><label>Nama:</label><input type="text" id="edit-nama" required></div>
+                                    <div class="form-group"><label>Email:</label><input type="email" id="edit-email" readonly></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>Nomor Telepon:</label><input type="text" id="edit-telepon"></div>
+                                    <div class="form-group"><label>Alamat:</label><input type="text" id="edit-alamat"></div>
+                                </div>
+                                <div class="form-group"><label>Kata Sandi:</label><input type="password" id="edit-password" required></div>
+                                <div class="form-actions right-align">
+                                    <button type="submit" class="btn btn-success">Simpan Perubahan</button>
+                                    <button type="button" class="btn btn-secondary" onclick="switchProfilTab('info')">Batal</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="profil-tab-riwayat" class="profil-tab">
+                        <h2>Status Pengajuan Sewa Saya</h2>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>Nama Kost</th><th>Tanggal Masuk</th><th>Durasi</th><th>Status</th></tr>
+                                </thead>
+                                <tbody id="user-pengajuan-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="profil-tab-tersimpan" class="profil-tab">
+                        <h2>Kost Tersimpan (Favorit)</h2>
+                        <div class="card-grid" id="saved-kost-list" style="margin-top: 16px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 10. CHAT -->
+        <section id="view-chat" class="view-section">
+            <div class="container section-padding">
+                <div class="section-header">
+                    <div>
+                        <span class="sub-label">KOMUNIKASI LANGSUNG</span>
+                        <h2>Pesan & Diskusi Kost</h2>
+                    </div>
+                </div>
+                <div class="chat-layout">
+                    <div class="chat-sidebar">
+                        <div class="chat-sidebar-header">Daftar Percakapan</div>
+                        <div class="chat-thread-list" id="chat-thread-list"></div>
+                    </div>
+                    <div class="chat-box">
+                        <div class="chat-header" id="chat-header"></div>
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <form class="chat-input-area" id="chat-form" onsubmit="sendChatMessage(event)" style="display: none;">
+                            <input type="text" id="chat-input" placeholder="Tulis pesan..." required autocomplete="off">
+                            <button type="submit" class="btn btn-primary">Kirim</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="core.js"></script>
+    <script src="pengguna.js"></script>
+</body>
+</html>
