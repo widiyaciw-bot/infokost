@@ -146,7 +146,7 @@ function showToast(msg) {
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
 // ==================== MENU MOBILE (HP) ====================
@@ -206,16 +206,65 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH & HAPUS AKUN ====================
+// ==================== AUTH DENGAN KONFIRMASI EMAIL ====================
+async function handleRegister(e) {
+    e.preventDefault();
+    const role = document.querySelector('input[name="reg-role"]:checked').value;
+    const nama = document.getElementById('reg-nama').value.trim();
+    const telepon = document.getElementById('reg-telepon').value.trim();
+    const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
+    const password = document.getElementById('reg-password').value;
+
+    const { error: authError } = await db.auth.signUp({
+        email: emailInput,
+        password: password,
+        options: {
+            emailRedirectTo: window.location.origin + '/index.html'
+        }
+    });
+
+    if (authError) {
+        showToast('Gagal daftar: ' + authError.message);
+        return;
+    }
+
+    await db.from('users').upsert({
+        email: emailInput,
+        nama: nama,
+        password: password,
+        role: role,
+        telepon: telepon,
+        alamat: "Indonesia",
+        saved_kost_ids: []
+    });
+
+    alert('Pendaftaran berhasil! Silakan cek kotak masuk (atau folder Spam) email Anda dan klik link konfirmasi sebelum Masuk.');
+    navigate('login');
+}
+
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim().toLowerCase();
     const pass = document.getElementById('login-password').value;
 
+    const { error: authError } = await db.auth.signInWithPassword({
+        email: email,
+        password: pass
+    });
+
+    if (authError) {
+        if (authError.message.includes('Email not confirmed')) {
+            showToast('Email belum dikonfirmasi! Cek kotak masuk email Anda terlebih dahulu.');
+        } else {
+            showToast('Email atau password salah!');
+        }
+        return;
+    }
+
     await loadAllDataFromSupabase();
-    const found = usersList.find(u => u.email.toLowerCase() === email && u.password === pass);
+    const found = usersList.find(u => u.email.toLowerCase() === email);
     if (!found) {
-        showToast('Email atau password salah!');
+        showToast('Data profil pengguna tidak ditemukan.');
         return;
     }
 
@@ -224,34 +273,8 @@ async function handleLogin(e) {
     window.location.href = currentUser.role === 'pemilik' ? 'pemilik.html' : 'index.html';
 }
 
-async function handleRegister(e) {
-    e.preventDefault();
-    const role = document.querySelector('input[name="reg-role"]:checked').value;
-    const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
-
-    await loadAllDataFromSupabase();
-    if (usersList.some(u => u.email.toLowerCase() === emailInput)) {
-        showToast('Email sudah terdaftar! Silakan Masuk.');
-        return;
-    }
-
-    const newUser = {
-        nama: document.getElementById('reg-nama').value.trim(),
-        email: emailInput,
-        password: document.getElementById('reg-password').value,
-        role: role,
-        telepon: document.getElementById('reg-telepon').value.trim(),
-        alamat: "Indonesia",
-        savedKostIds: []
-    };
-
-    usersList.push(newUser);
-    currentUser = newUser;
-    await saveAllData();
-    window.location.href = role === 'pemilik' ? 'pemilik.html' : 'index.html';
-}
-
-function logout() {
+async function logout() {
+    await db.auth.signOut();
     currentUser = null;
     localStorage.removeItem('ks_current_user');
     window.location.href = 'index.html';
@@ -264,6 +287,7 @@ async function deleteAccount() {
     const emailToDelete = currentUser.email;
     await db.from('users').delete().eq('email', emailToDelete);
     await db.from('chats').delete().or(`pengguna_email.eq.${emailToDelete},pemilik_email.eq.${emailToDelete}`);
+    await db.auth.signOut();
 
     currentUser = null;
     localStorage.removeItem('ks_current_user');
