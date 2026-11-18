@@ -80,7 +80,7 @@ function createKostCardHTML(k) {
             <div class="card-img-wrapper">
                 <img src="${foto}" alt="${k.nama}" class="card-img">
                 <span class="badge">TERSEDIA</span>
-                <button class="favorite-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveKost(${k.id})" title="Simpan Kost">&#9829;</button>
+                <button class="favorite-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveKost(${k.id})" title="Simpan Kost" style="position: absolute; top: 10px; right: 10px; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px; color: ${isSaved ? '#e74c3c' : '#ccc'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">&#9829;</button>
             </div>
             <div class="card-body">
                 <h3 class="card-title">${k.nama}</h3>
