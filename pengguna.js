@@ -78,7 +78,8 @@ function renderKatalogKost() {
 }
 
 function createKostCardHTML(k) {
-    const isSaved = currentUser && currentUser.savedKostIds && currentUser.savedKostIds.includes(k.id);
+    const savedIds = currentUser && currentUser.savedKostIds ? currentUser.savedKostIds : [];
+    const isSaved = savedIds.includes(k.id);
     const fotoDefault = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80';
     const foto = k.foto || fotoDefault;
 
@@ -149,6 +150,7 @@ function showDetailKost(kostId) {
 
     const container = document.getElementById('detail-kost-container');
     const foto = kost.foto || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
+    const pemilikEmail = kost.pemilikEmail || kost.pemilik_email || 'pemilik@kostspace.com';
 
     container.innerHTML = `
         <div class="detail-grid">
@@ -170,7 +172,7 @@ function showDetailKost(kostId) {
 
                 <div style="display:flex; gap:10px;">
                     <button class="btn btn-primary" style="flex:1;" onclick="openAjukanSewa()">Ajukan Sewa</button>
-                    <button class="btn btn-outline" style="flex:1;" onclick="openChatWithPemilik('${kost.pemilikEmail}', '${kost.nama}', ${kost.id})">&#128172; Hubungi Pemilik</button>
+                    <button class="btn btn-outline" style="flex:1;" onclick="openChatWithPemilik('${pemilikEmail}', '${kost.nama}', ${kost.id})">&#128172; Hubungi Pemilik</button>
                 </div>
             </div>
         </div>
@@ -376,13 +378,13 @@ function renderProfil() {
     // Render Riwayat Pengajuan Sewa
     const tbody = document.getElementById('user-pengajuan-tbody');
     if (tbody) {
-        const myPengajuan = pengajuanList.filter(p => p.pemohonEmail === currentUser.email);
+        const myPengajuan = pengajuanList.filter(p => p.pemohonEmail === currentUser.email || p.pemohon_email === currentUser.email);
         if (myPengajuan.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Belum ada riwayat pengajuan sewa.</td></tr>`;
         } else {
             tbody.innerHTML = myPengajuan.map(p => `
                 <tr>
-                    <td><strong>${p.kostNama}</strong></td>
+                    <td><strong>${p.kostNama || p.kost_nama}</strong></td>
                     <td>${p.tanggal}</td>
                     <td>${p.durasi}</td>
                     <td><span class="badge" style="background:var(--primary); font-size:0.75rem;">${p.status}</span></td>
