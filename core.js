@@ -217,9 +217,13 @@ async function handleRegister(e) {
     const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
     const password = document.getElementById('reg-password').value;
 
+    // 1. Daftarkan akun & minta Supabase mengirimkan OTP angka ke email
     const { error: authError } = await db.auth.signUp({
         email: emailInput,
-        password: password
+        password: password,
+        options: {
+            data: { nama: nama }
+        }
     });
 
     if (authError) {
@@ -227,6 +231,7 @@ async function handleRegister(e) {
         return;
     }
 
+    // Simpan juga ke tabel users
     await db.from('users').upsert({
         email: emailInput,
         nama: nama,
@@ -238,10 +243,10 @@ async function handleRegister(e) {
     });
 
     pendingVerifyEmail = emailInput;
-    document.getElementById('otp-target-text').textContent = `Masukkan kode angka OTP yang dikirim ke ${emailInput}`;
+    document.getElementById('otp-target-text').textContent = `Masukkan 6 digit kode OTP angka yang dikirim ke ${emailInput}`;
     document.getElementById('signup-otp-code').value = '';
     navigate('verify-otp');
-    showToast('Kode OTP verifikasi telah dikirim ke email!');
+    showToast('Kode OTP verifikasi telah dikirim ke email Anda!');
 }
 
 async function handleVerifySignupOTP(e) {
@@ -302,7 +307,7 @@ async function handleLogin(e) {
     if (authError) {
         if (authError.message.includes('Email not confirmed')) {
             pendingVerifyEmail = email;
-            document.getElementById('otp-target-text').textContent = `Masukkan kode OTP yang dikirim ke ${email}`;
+            document.getElementById('otp-target-text').textContent = `Masukkan kode OTP angka yang dikirim ke ${email}`;
             navigate('verify-otp');
             showToast('Email belum diverifikasi! Masukkan kode OTP.');
         } else {
@@ -350,9 +355,16 @@ async function handleForgotPassword(e) {
     e.preventDefault();
     const email = document.getElementById('forgot-email').value.trim().toLowerCase();
 
-    const { error } = await db.auth.resetPasswordForEmail(email);
+    // Memaksa Supabase mengirim kode OTP angka untuk pemulihan (recovery)
+    const { error } = await db.auth.signInWithOtp({
+        email: email,
+        options: {
+            shouldCreateUser: false
+        }
+    });
+
     if (error) {
-        showToast('Gagal mengirim kode: ' + error.message);
+        showToast('Gagal mengirim kode OTP: ' + error.message);
         return;
     }
 
@@ -361,7 +373,7 @@ async function handleForgotPassword(e) {
     document.getElementById('new-password').value = '';
     document.getElementById('confirm-new-password').value = '';
     navigate('reset-password');
-    showToast('Kode OTP reset sandi telah dikirim ke email!');
+    showToast('Kode OTP angka untuk reset sandi telah dikirim ke email Anda!');
 }
 
 async function handleUpdateNewPassword(e) {
@@ -375,10 +387,11 @@ async function handleUpdateNewPassword(e) {
         return;
     }
 
+    // Verifikasi kode OTP tipe email / recovery
     const { error: verifyErr } = await db.auth.verifyOtp({
         email: pendingResetEmail,
         token: token,
-        type: 'recovery'
+        type: 'email'
     });
 
     if (verifyErr) {
@@ -386,6 +399,7 @@ async function handleUpdateNewPassword(e) {
         return;
     }
 
+    // Update password baru lewat session yang terbentuk setelah verifikasi OTP
     const { error: updateErr } = await db.auth.updateUser({
         password: newPass
     });
