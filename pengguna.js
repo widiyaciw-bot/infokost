@@ -77,10 +77,9 @@ function createKostCardHTML(k) {
 
     return `
         <div class="card">
-            <div class="card-img-wrapper" style="position: relative;">
+            <div class="card-img-wrapper">
                 <img src="${foto}" alt="${k.nama}" class="card-img">
                 <span class="badge">TERSEDIA</span>
-                <button class="favorite-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveKost(${k.id})" title="Simpan Kost" style="position: absolute; top: 12px; right: 12px; background: white; border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 20px; color: ${isSaved ? '#e74c3c' : '#ccc'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.25); z-index: 5;">&#9829;</button>
             </div>
             <div class="card-body">
                 <h3 class="card-title">${k.nama}</h3>
@@ -91,7 +90,12 @@ function createKostCardHTML(k) {
                     </div>
                     <span style="font-size:0.82rem; color:var(--text-muted);">&#128716; ${k.kamar || '1'} Kamar</span>
                 </div>
-                <button class="btn btn-primary full-width" style="margin-top:12px;" onclick="showDetailKost(${k.id})">Lihat Detail</button>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button class="btn btn-primary" style="flex: 2;" onclick="showDetailKost(${k.id})">Lihat Detail</button>
+                    <button class="btn ${isSaved ? 'btn-primary' : 'btn-outline'}" style="flex: 1; font-size: 0.85rem;" onclick="toggleSaveKost(${k.id})">
+                        ${isSaved ? '❤️ Disimpan' : '🤍 Simpan'}
+                    </button>
+                </div>
             </div>
         </div>
     `;
