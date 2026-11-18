@@ -175,79 +175,12 @@
                             <input type="email" id="login-email" required placeholder="email@example.com">
                         </div>
                         <div class="form-group">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                <label style="margin-bottom:0;">Password</label>
-                                <a href="#" onclick="navigate('lupa-password')" style="font-size:0.82rem; color:var(--text-muted); text-decoration:underline;">Lupa kata sandi?</a>
-                            </div>
+                            <label>Password</label>
                             <input type="password" id="login-password" required placeholder="••••••••">
                         </div>
                         <button type="submit" class="btn btn-primary full-width">Masuk</button>
                     </form>
                     <p class="auth-footer">Belum punya akun? <a href="#" onclick="navigate('register')">Daftar</a></p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7A. VERIFIKASI KODE OTP SETELAH DAFTAR -->
-        <section id="view-verify-otp" class="view-section">
-            <div class="auth-container">
-                <div class="auth-card">
-                    <div class="brand-logo center-logo">K</div>
-                    <h2>Verifikasi Email</h2>
-                    <p id="otp-target-text">Masukkan kode angka yang dikirim ke email Anda.</p>
-                    <form onsubmit="handleVerifySignupOTP(event)">
-                        <div class="form-group">
-                            <label>Kode OTP (Angka)</label>
-                            <input type="text" id="signup-otp-code" inputmode="numeric" required placeholder="123456" style="text-align:center; font-size:1.4rem; letter-spacing:6px; font-weight:700;">
-                        </div>
-                        <button type="submit" class="btn btn-primary full-width">Verifikasi Akun</button>
-                    </form>
-                    <p class="auth-footer">Tidak menerima kode? <a href="#" onclick="resendSignupOTP()">Kirim Ulang Kode</a></p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7B. LUPA KATA SANDI -->
-        <section id="view-lupa-password" class="view-section">
-            <div class="auth-container">
-                <div class="auth-card">
-                    <div class="brand-logo center-logo">K</div>
-                    <h2>Lupa Kata Sandi</h2>
-                    <p>Masukkan email terdaftar untuk menerima kode angka reset password.</p>
-                    <form onsubmit="handleForgotPassword(event)">
-                        <div class="form-group">
-                            <label>Email Terdaftar</label>
-                            <input type="email" id="forgot-email" required placeholder="email@example.com">
-                        </div>
-                        <button type="submit" class="btn btn-primary full-width">Kirim Kode Reset</button>
-                    </form>
-                    <p class="auth-footer"><a href="#" onclick="navigate('login')">&larr; Kembali ke Masuk</a></p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7C. RESET PASSWORD DENGAN KODE OTP -->
-        <section id="view-reset-password" class="view-section">
-            <div class="auth-container">
-                <div class="auth-card">
-                    <div class="brand-logo center-logo">K</div>
-                    <h2>Buat Kata Sandi Baru</h2>
-                    <p>Masukkan kode angka dari email beserta kata sandi baru Anda.</p>
-                    <form onsubmit="handleUpdateNewPassword(event)">
-                        <div class="form-group">
-                            <label>Kode OTP dari Email</label>
-                            <input type="text" id="reset-otp-code" inputmode="numeric" required placeholder="123456" style="text-align:center; font-size:1.4rem; letter-spacing:6px; font-weight:700;">
-                        </div>
-                        <div class="form-group">
-                            <label>Kata Sandi Baru (Min. 6 Karakter)</label>
-                            <input type="password" id="new-password" minlength="6" required placeholder="••••••••">
-                        </div>
-                        <div class="form-group">
-                            <label>Ulangi Kata Sandi Baru</label>
-                            <input type="password" id="confirm-new-password" minlength="6" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn btn-primary full-width">Simpan Kata Sandi Baru</button>
-                    </form>
                 </div>
             </div>
         </section>
