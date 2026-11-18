@@ -13,8 +13,6 @@ let currentUser = JSON.parse(localStorage.getItem('ks_current_user')) || null;
 
 let activeThreadId = null;
 let tempUploadedBase64 = { kost: null, oper: null };
-let pendingVerifyEmail = '';
-let pendingResetEmail = '';
 
 // ==================== SINKRONISASI DATA SUPABASE ====================
 async function loadAllDataFromSupabase() {
@@ -208,7 +206,7 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH DENGAN KODE OTP ANGKA ====================
+// ==================== AUTH LANGSUNG (TANPA EMAIL / OTP) ====================
 async function handleRegister(e) {
     e.preventDefault();
     const role = document.querySelector('input[name="reg-role"]:checked').value;
@@ -217,106 +215,51 @@ async function handleRegister(e) {
     const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
     const password = document.getElementById('reg-password').value;
 
-    // Menggunakan signInWithOtp agar Supabase mengirimkan token angka OTP murni
-    const { error: authError } = await db.auth.signInWithOtp({
-        email: emailInput,
-        options: {
-            data: { nama: nama, password: password, role: role, telepon: telepon }
-        }
-    });
-
-    if (authError) {
-        showToast('Gagal mengirim OTP: ' + authError.message);
-        return;
-    }
-
-    pendingVerifyEmail = emailInput;
-    document.getElementById('otp-target-text').textContent = `Masukkan 6 digit kode OTP angka yang dikirim ke ${emailInput}`;
-    document.getElementById('signup-otp-code').value = '';
-    navigate('verify-otp');
-    showToast('Kode OTP angka telah dikirim ke email!');
-}
-
-async function handleVerifySignupOTP(e) {
-    e.preventDefault();
-    const token = document.getElementById('signup-otp-code').value.trim();
-    if (!pendingVerifyEmail) {
-        showToast('Sesi habis, silakan mulai ulang.');
-        return navigate('login');
-    }
-
-    // Verifikasi token OTP yang dimasukkan pengguna
-    const { data, error } = await db.auth.verifyOtp({
-        email: pendingVerifyEmail,
-        token: token,
-        type: 'email'
-    });
-
-    if (error) {
-        showToast('Kode OTP salah atau kedaluwarsa: ' + error.message);
-        return;
-    }
-
-    // Ambil data form pendaftaran sementara atau buat data user baru di tabel users
-    if (data && data.user) {
-        const meta = data.user.user_metadata || {};
-        await db.from('users').upsert({
-            email: pendingVerifyEmail,
-            nama: meta.nama || 'Pengguna',
-            password: meta.password || '123456',
-            role: meta.role || 'pengguna',
-            telepon: meta.telepon || '',
-            alamat: 'Indonesia',
-            saved_kost_ids: []
-        });
-    }
-
     await loadAllDataFromSupabase();
-    const found = usersList.find(u => u.email.toLowerCase() === pendingVerifyEmail);
-    if (found) {
-        currentUser = found;
-        localStorage.setItem('ks_current_user', JSON.stringify(currentUser));
-        alert('Verifikasi OTP berhasil! Selamat datang di KostSpace.');
-        window.location.href = currentUser.role === 'pemilik' ? 'pemilik.html' : 'index.html';
-    } else {
-        alert('Verifikasi berhasil! Silakan masuk.');
-        navigate('login');
+    const existing = usersList.find(u => u.email.toLowerCase() === emailInput);
+    if (existing) {
+        showToast('Email sudah terdaftar! Silakan langsung masuk.');
+        return;
     }
-}
 
-async function resendSignupOTP() {
-    if (!pendingVerifyEmail) return;
-    const { error } = await db.auth.signInWithOtp({ email: pendingVerifyEmail });
-    if (error) {
-        showToast('Gagal kirim ulang: ' + error.message);
-    } else {
-        showToast('Kode OTP baru telah dikirim.');
-    }
+    const newUser = {
+        email: emailInput,
+        nama: nama,
+        password: password,
+        role: role,
+        telepon: telepon,
+        alamat: "Indonesia",
+        saved_kost_ids: []
+    };
+
+    usersList.push(newUser);
+    await saveAllData();
+
+    currentUser = newUser;
+    localStorage.setItem('ks_current_user', JSON.stringify(currentUser));
+    alert('Pendaftaran berhasil! Selamat datang di KostSpace.');
+    window.location.href = currentUser.role === 'pemilik' ? 'pemilik.html' : 'index.html';
 }
 
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim().toLowerCase();
-    
-    // Login menggunakan OTP instan (tanpa password, langsung kirim kode OTP angka ke email)
-    const { error: authError } = await db.auth.signInWithOtp({
-        email: email,
-        options: { shouldCreateUser: false }
-    });
+    const pass = document.getElementById('login-password').value;
 
-    if (authError) {
-        showToast('Gagal mengirim OTP login: ' + authError.message);
+    await loadAllDataFromSupabase();
+    const found = usersList.find(u => u.email.toLowerCase() === email && u.password === pass);
+
+    if (!found) {
+        showToast('Email atau password salah!');
         return;
     }
 
-    pendingVerifyEmail = email;
-    document.getElementById('otp-target-text').textContent = `Masukkan kode OTP login yang dikirim ke ${email}`;
-    navigate('verify-otp');
-    showToast('Kode OTP login telah dikirim ke email Anda!');
+    currentUser = found;
+    localStorage.setItem('ks_current_user', JSON.stringify(currentUser));
+    window.location.href = currentUser.role === 'pemilik' ? 'pemilik.html' : 'index.html';
 }
 
 async function logout() {
-    await db.auth.signOut();
     currentUser = null;
     localStorage.removeItem('ks_current_user');
     window.location.href = 'index.html';
@@ -327,77 +270,14 @@ async function deleteAccount() {
     if (!confirm(`Yakin ingin menghapus akun "${currentUser.nama}" secara permanen?`)) return;
 
     const emailToDelete = currentUser.email;
+    usersList = usersList.filter(u => u.email !== emailToDelete);
     await db.from('users').delete().eq('email', emailToDelete);
     await db.from('chats').delete().or(`pengguna_email.eq.${emailToDelete},pemilik_email.eq.${emailToDelete}`);
-    await db.auth.signOut();
 
     currentUser = null;
     localStorage.removeItem('ks_current_user');
     alert('Akun Anda berhasil dihapus.');
     window.location.href = 'index.html';
-}
-
-// ==================== LUPA & RESET PASSWORD DENGAN OTP ====================
-async function handleForgotPassword(e) {
-    e.preventDefault();
-    const email = document.getElementById('forgot-email').value.trim().toLowerCase();
-
-    const { error } = await db.auth.signInWithOtp({
-        email: email,
-        options: { shouldCreateUser: false }
-    });
-
-    if (error) {
-        showToast('Gagal mengirim kode OTP: ' + error.message);
-        return;
-    }
-
-    pendingResetEmail = email;
-    document.getElementById('reset-otp-code').value = '';
-    document.getElementById('new-password').value = '';
-    document.getElementById('confirm-new-password').value = '';
-    navigate('reset-password');
-    showToast('Kode OTP angka untuk pemulihan telah dikirim ke email!');
-}
-
-async function handleUpdateNewPassword(e) {
-    e.preventDefault();
-    const token = document.getElementById('reset-otp-code').value.trim();
-    const newPass = document.getElementById('new-password').value;
-    const confirmPass = document.getElementById('confirm-new-password').value;
-
-    if (newPass !== confirmPass) {
-        showToast('Konfirmasi kata sandi tidak cocok!');
-        return;
-    }
-
-    const { error: verifyErr } = await db.auth.verifyOtp({
-        email: pendingResetEmail,
-        token: token,
-        type: 'email'
-    });
-
-    if (verifyErr) {
-        showToast('Kode OTP salah atau kedaluwarsa!');
-        return;
-    }
-
-    const { error: updateErr } = await db.auth.updateUser({
-        password: newPass
-    });
-
-    if (updateErr) {
-        showToast('Gagal memperbarui sandi: ' + updateErr.message);
-        return;
-    }
-
-    await db.from('users')
-        .update({ password: newPass })
-        .eq('email', pendingResetEmail);
-
-    await db.auth.signOut();
-    alert('Kata sandi berhasil diperbarui! Silakan masuk.');
-    navigate('login');
 }
 
 // ==================== PROFIL & CHAT BERSAMA ====================
