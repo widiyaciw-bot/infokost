@@ -14,6 +14,16 @@ let currentUser = JSON.parse(localStorage.getItem('ks_current_user')) || null;
 let activeThreadId = null;
 let tempUploadedBase64 = { kost: null, oper: null };
 
+// ==================== OTOMATIS MUAT DATA SAAT HALAMAN DIBUKA ====================
+document.addEventListener("DOMContentLoaded", async function() {
+    await loadAllDataFromSupabase();
+    // Jalankan fungsi render bawaan halaman jika ada
+    if (typeof renderBeranda === 'function') renderBeranda();
+    if (typeof renderKatalogKost === 'function') renderKatalogKost();
+    if (typeof renderOperKost === 'function') renderOperKost();
+    if (typeof renderProfil === 'function') renderProfil();
+});
+
 // ==================== SINKRONISASI DATA SUPABASE ====================
 async function loadAllDataFromSupabase() {
     try {
@@ -206,7 +216,7 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH LANGSUNG (TANPA EMAIL / OTP) ====================
+// ==================== AUTH LANGSUNG ====================
 async function handleRegister(e) {
     e.preventDefault();
     const role = document.querySelector('input[name="reg-role"]:checked').value;
