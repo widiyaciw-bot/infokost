@@ -1,12 +1,4 @@
-// ==================== RENDER HALAMAN UTAMA & KATALOG ====================
-document.addEventListener("DOMContentLoaded", function () {
-    renderBeranda();
-    renderKatalogKost();
-    renderOperKost();
-    renderProfil();
-    updateNavAuth();
-});
-
+// ==================== NAVIGASI & RENDER UTAMA ====================
 function navigate(viewName) {
     document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
     const target = document.getElementById(`view-${viewName}`);
@@ -51,7 +43,7 @@ function updateNavAuth() {
     }
 }
 
-// ==================== RENDER BERANDA & KATALOG KOST ====================
+// ==================== BERANDA & KATALOG KOST ====================
 function renderBeranda() {
     const container = document.getElementById('beranda-kost-list');
     if (!container) return;
@@ -249,7 +241,7 @@ async function toggleSaveKost(kostId) {
     renderProfil();
 }
 
-// ==================== OPER KOST ====================
+// ==================== OPER KOST & DETAIL OPER ====================
 function renderOperKost() {
     const container = document.getElementById('oper-kost-list');
     if (!container) return;
@@ -275,10 +267,53 @@ function renderOperKost() {
                         <span class="price">${formatRupiah(o.harga)}</span>
                         <span style="font-size:0.8rem; color:var(--text-muted);">Pengoper: ${o.pengoper || 'Penghuni'}</span>
                     </div>
+                    <button class="btn btn-primary full-width" style="margin-top:12px;" onclick="showDetailOperKost(${o.id})">Lihat Detail</button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+let selectedOperDetail = null;
+
+function showDetailOperKost(operId) {
+    const oper = operList.find(o => o.id === Number(operId));
+    if (!oper) {
+        showToast('Data oper kost tidak ditemukan.');
+        return;
+    }
+    selectedOperDetail = oper;
+
+    const container = document.getElementById('detail-kost-container');
+    const foto = oper.foto || 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80';
+    const pengoperEmail = oper.pengoperEmail || oper.pengoper_email || 'pengoper@kostspace.com';
+
+    container.innerHTML = `
+        <div class="detail-grid">
+            <div>
+                <img src="${foto}" alt="${oper.nama}" style="width:100%; border-radius:12px; object-fit:cover; max-height:400px;">
+            </div>
+            <div>
+                <span class="pill-badge" style="background:var(--accent);">OPER SISA SEWA KOST</span>
+                <h1 style="margin-top:8px; font-size:1.8rem;">${oper.nama}</h1>
+                <p style="color:var(--text-muted); margin-bottom:12px;">&#128205; ${oper.lokasi}</p>
+                <h3 style="color:var(--primary); font-size:1.5rem; margin-bottom:16px;">${formatRupiah(oper.harga)}</h3>
+                
+                <div style="background:var(--bg-secondary); padding:16px; border-radius:8px; margin-bottom:20px;">
+                    <strong>Deskripsi & Sisa Masa Sewa:</strong>
+                    <p style="margin-top:6px; color:var(--text-muted); line-height:1.5;">${oper.deskripsi}</p>
+                    <strong style="display:block; margin-top:12px;">Pengoper / Penghuni Sebelumnya:</strong>
+                    <p style="margin-top:4px; color:var(--text-muted);">${oper.pengoper || 'Penghuni'}</p>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" style="flex:1;" onclick="openChatWithPemilik('${pengoperEmail}', '${oper.nama}', ${oper.id})">&#128172; Hubungi Pengoper</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    navigate('detail-kost');
 }
 
 function handlePostingOperClick() {
@@ -316,14 +351,14 @@ async function submitOperKost(e) {
     renderOperKost();
 }
 
-// ==================== CHAT PEMILIK ====================
-async function openChatWithPemilik(pemilikEmail, kostNama, kostId) {
+// ==================== CHAT PEMILIK / PENGOPER ====================
+async function openChatWithPemilik(targetEmail, kostNama, kostId) {
     if (!currentUser) {
         showToast('Silakan masuk untuk mengirim pesan.');
         return navigate('login');
     }
-    if (!pemilikEmail) {
-        pemilikEmail = 'pemilik@kostspace.com';
+    if (!targetEmail) {
+        targetEmail = 'pemilik@kostspace.com';
     }
 
     const threadId = `${kostId}_${currentUser.email.replace(/[@.]/g, '_')}`;
@@ -336,8 +371,8 @@ async function openChatWithPemilik(pemilikEmail, kostNama, kostId) {
             kost_nama: kostNama,
             pengguna_email: currentUser.email,
             pengguna_nama: currentUser.nama,
-            pemilik_email: pemilikEmail,
-            pemilik_nama: 'Pemilik Kost',
+            pemilik_email: targetEmail,
+            pemilik_nama: 'Pemilik/Pengoper Kost',
             messages: []
         };
         chatThreads.push(existingThread);
