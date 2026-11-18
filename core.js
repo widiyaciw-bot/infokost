@@ -17,11 +17,11 @@ let tempUploadedBase64 = { kost: null, oper: null };
 // ==================== OTOMATIS MUAT DATA SAAT HALAMAN DIBUKA ====================
 document.addEventListener("DOMContentLoaded", async function() {
     await loadAllDataFromSupabase();
-    // Jalankan fungsi render bawaan halaman jika ada
     if (typeof renderBeranda === 'function') renderBeranda();
     if (typeof renderKatalogKost === 'function') renderKatalogKost();
     if (typeof renderOperKost === 'function') renderOperKost();
     if (typeof renderProfil === 'function') renderProfil();
+    if (typeof updateNavAuth === 'function') updateNavAuth();
 });
 
 // ==================== SINKRONISASI DATA SUPABASE ====================
@@ -74,7 +74,6 @@ async function loadAllDataFromSupabase() {
         }
     } catch (err) {
         console.error('Error memuat data:', err);
-        showToast('Gagal memuat data dari server.');
     }
 }
 
@@ -90,56 +89,6 @@ async function saveAllData() {
                 telepon: u.telepon || '',
                 alamat: u.alamat || '',
                 saved_kost_ids: u.savedKostIds || []
-            })));
-        }
-        if (kostList.length) {
-            await db.from('kost').upsert(kostList.map(k => ({
-                id: k.id,
-                nama: k.nama,
-                lokasi: k.lokasi,
-                harga: k.harga,
-                kamar: k.kamar,
-                fasilitas: k.fasilitas,
-                foto: k.foto,
-                pemilik_email: k.pemilikEmail
-            })));
-        }
-        if (operList.length) {
-            await db.from('oper_kost').upsert(operList.map(o => ({
-                id: o.id,
-                nama: o.nama,
-                lokasi: o.lokasi,
-                harga: o.harga,
-                deskripsi: o.deskripsi,
-                foto: o.foto,
-                pengoper: o.pengoper,
-                pengoper_email: o.pengoperEmail
-            })));
-        }
-        if (pengajuanList.length) {
-            await db.from('pengajuan').upsert(pengajuanList.map(p => ({
-                id: p.id,
-                kost_id: p.kostId,
-                kost_nama: p.kostNama,
-                pemohon_nama: p.pemohonNama,
-                pemohon_email: p.pemohonEmail,
-                telepon: p.telepon,
-                tanggal: p.tanggal,
-                durasi: p.durasi,
-                pesan: p.pesan,
-                status: p.status
-            })));
-        }
-        if (chatThreads.length) {
-            await db.from('chats').upsert(chatThreads.map(c => ({
-                id: c.id,
-                kost_id: c.kostId,
-                kost_nama: c.kostNama,
-                pengguna_email: c.penggunaEmail,
-                pengguna_nama: c.penggunaNama,
-                pemilik_email: c.pemilikEmail,
-                pemilik_nama: c.pemilikNama,
-                messages: c.messages
             })));
         }
     } catch (err) {
@@ -164,18 +113,6 @@ function toggleMobileMenu() {
     const navMenu = document.getElementById('nav-menu');
     if (navMenu) navMenu.classList.toggle('mobile-open');
 }
-
-document.addEventListener('click', function (e) {
-    const navMenu = document.getElementById('nav-menu');
-    const menuBtn = document.querySelector('.mobile-menu-btn');
-    if (!navMenu || !menuBtn) return;
-
-    if (e.target.closest('#nav-menu a')) {
-        navMenu.classList.remove('mobile-open');
-    } else if (!navMenu.contains(e.target) && !menuBtn.contains(e.target)) {
-        navMenu.classList.remove('mobile-open');
-    }
-});
 
 // ==================== UPLOAD & KOMPRESI FOTO ====================
 function compressImageToBase64(file, callback) {
@@ -290,7 +227,7 @@ async function deleteAccount() {
     window.location.href = 'index.html';
 }
 
-// ==================== PROFIL & CHAT BERSAMA ====================
+// ==================== CHAT DAN PESAN ====================
 function switchProfilTab(tabName, btnEl) {
     document.querySelectorAll('.profil-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`profil-tab-${tabName}`).classList.add('active');
@@ -318,11 +255,13 @@ async function saveProfil(e) {
 
 function renderChatPage() {
     if (!currentUser) return;
-    const myThreads = chatThreads.filter(t => t.pemilikEmail === currentUser.email || t.penggunaEmail === currentUser.email);
+    const myThreads = chatThreads.filter(t => t.pemilikEmail === currentUser.email || t.penggunaEmail === currentUser.email || t.pemilik_email === currentUser.email || t.pengguna_email === currentUser.email);
     const threadListEl = document.getElementById('chat-thread-list');
     const headerEl = document.getElementById('chat-header');
     const msgContainer = document.getElementById('chat-messages');
     const formEl = document.getElementById('chat-form');
+
+    if (!threadListEl) return;
 
     if (myThreads.length === 0) {
         threadListEl.innerHTML = `<div style="padding:20px; color:var(--text-muted); font-size:0.88rem;">Belum ada percakapan.</div>`;
@@ -335,26 +274,30 @@ function renderChatPage() {
     if (!activeThreadId || !myThreads.some(t => t.id === activeThreadId)) activeThreadId = myThreads[0].id;
 
     threadListEl.innerHTML = myThreads.map(t => {
-        const lawan = t.pemilikEmail === currentUser.email ? t.penggunaNama : t.pemilikNama;
-        const lastMsg = t.messages.length ? t.messages[t.messages.length - 1].text : 'Mulai obrolan...';
+        const lawan = (t.pemilikEmail === currentUser.email || t.pemilik_email === currentUser.email) ? (t.penggunaNama || t.pengguna_nama) : (t.pemilikNama || t.pemilik_nama);
+        const msgs = t.messages || [];
+        const lastMsg = msgs.length ? msgs[msgs.length - 1].text : 'Mulai obrolan...';
         return `
             <div class="chat-thread-item ${t.id === activeThreadId ? 'active' : ''}" onclick="selectChatThread('${t.id}')">
                 <div class="thread-title">${lawan}</div>
-                <span class="thread-sub">${t.kostNama}</span>
+                <span class="thread-sub">${t.kostNama || t.kost_nama}</span>
                 <div class="thread-preview">${lastMsg}</div>
             </div>
         `;
     }).join('');
 
     const thread = chatThreads.find(t => t.id === activeThreadId);
-    const lawanBicara = thread.pemilikEmail === currentUser.email ? thread.penggunaNama : thread.pemilikNama;
-    headerEl.innerHTML = `<strong>${lawanBicara}</strong> <small style="color:var(--text-muted); display:block;">Topik: ${thread.kostNama}</small>`;
+    if (!thread) return;
+
+    const lawanBicara = (thread.pemilikEmail === currentUser.email || thread.pemilik_email === currentUser.email) ? (thread.penggunaNama || thread.pengguna_nama) : (thread.pemilikNama || thread.pemilik_nama);
+    headerEl.innerHTML = `<strong>${lawanBicara}</strong> <small style="color:var(--text-muted); display:block;">Topik: ${thread.kostNama || thread.kost_nama}</small>`;
     formEl.style.display = 'flex';
 
-    msgContainer.innerHTML = thread.messages.length === 0
-        ? `<div class="chat-empty-state">Kirim pesan pertama mengenai <strong>${thread.kostNama}</strong>.</div>`
-        : thread.messages.map(m => {
-            const isMe = m.senderEmail === currentUser.email;
+    const messages = thread.messages || [];
+    msgContainer.innerHTML = messages.length === 0
+        ? `<div class="chat-empty-state">Kirim pesan pertama mengenai <strong>${thread.kostNama || thread.kost_nama}</strong>.</div>`
+        : messages.map(m => {
+            const isMe = m.senderEmail === currentUser.email || m.sender_email === currentUser.email;
             return `
                 <div class="msg-bubble ${isMe ? 'msg-sent' : 'msg-received'}">
                     <div>${m.text}</div>
@@ -377,11 +320,15 @@ async function sendChatMessage(e) {
     if (!text || !activeThreadId) return;
 
     const thread = chatThreads.find(t => t.id === activeThreadId);
+    if (!thread) return;
+
+    if (!thread.messages) thread.messages = [];
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
     thread.messages.push({ senderEmail: currentUser.email, senderName: currentUser.nama, text, time: timeStr });
     input.value = '';
     renderChatPage();
-    await saveAllData();
+
+    await db.from('chats').update({ messages: thread.messages }).eq('id', thread.id);
 }
