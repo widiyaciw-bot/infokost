@@ -13,6 +13,8 @@ let currentUser = JSON.parse(localStorage.getItem('ks_current_user')) || null;
 
 let activeThreadId = null;
 let tempUploadedBase64 = { kost: null, oper: null };
+let pendingVerifyEmail = '';
+let pendingResetEmail = '';
 
 // ==================== SINKRONISASI DATA SUPABASE ====================
 async function loadAllDataFromSupabase() {
@@ -206,7 +208,7 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH DENGAN KONFIRMASI LINK EMAIL ====================
+// ==================== AUTH DENGAN KODE OTP ANGKA ====================
 async function handleRegister(e) {
     e.preventDefault();
     const role = document.querySelector('input[name="reg-role"]:checked').value;
@@ -217,10 +219,7 @@ async function handleRegister(e) {
 
     const { error: authError } = await db.auth.signUp({
         email: emailInput,
-        password: password,
-        options: {
-            emailRedirectTo: window.location.origin + '/index.html'
-        }
+        password: password
     });
 
     if (authError) {
@@ -238,8 +237,56 @@ async function handleRegister(e) {
         saved_kost_ids: []
     });
 
-    alert('Pendaftaran berhasil! Silakan cek kotak masuk (atau folder Spam) email Anda dan klik link konfirmasi sebelum Masuk.');
-    navigate('login');
+    pendingVerifyEmail = emailInput;
+    document.getElementById('otp-target-text').textContent = `Masukkan kode angka OTP yang dikirim ke ${emailInput}`;
+    document.getElementById('signup-otp-code').value = '';
+    navigate('verify-otp');
+    showToast('Kode OTP verifikasi telah dikirim ke email!');
+}
+
+async function handleVerifySignupOTP(e) {
+    e.preventDefault();
+    const token = document.getElementById('signup-otp-code').value.trim();
+    if (!pendingVerifyEmail) {
+        showToast('Sesi habis, silakan masuk kembali.');
+        return navigate('login');
+    }
+
+    const { error } = await db.auth.verifyOtp({
+        email: pendingVerifyEmail,
+        token: token,
+        type: 'signup'
+    });
+
+    if (error) {
+        showToast('Kode OTP salah atau kedaluwarsa!');
+        return;
+    }
+
+    await loadAllDataFromSupabase();
+    const found = usersList.find(u => u.email.toLowerCase() === pendingVerifyEmail);
+    if (found) {
+        currentUser = found;
+        localStorage.setItem('ks_current_user', JSON.stringify(currentUser));
+        alert('Email berhasil diverifikasi! Selamat datang.');
+        window.location.href = currentUser.role === 'pemilik' ? 'pemilik.html' : 'index.html';
+    } else {
+        alert('Verifikasi berhasil! Silakan masuk.');
+        navigate('login');
+    }
+}
+
+async function resendSignupOTP() {
+    if (!pendingVerifyEmail) return;
+    const { error } = await db.auth.resend({
+        type: 'signup',
+        email: pendingVerifyEmail
+    });
+    if (error) {
+        showToast('Gagal kirim ulang: ' + error.message);
+    } else {
+        showToast('Kode OTP baru telah dikirim.');
+    }
 }
 
 async function handleLogin(e) {
@@ -254,7 +301,10 @@ async function handleLogin(e) {
 
     if (authError) {
         if (authError.message.includes('Email not confirmed')) {
-            showToast('Email belum dikonfirmasi! Cek kotak masuk email Anda terlebih dahulu.');
+            pendingVerifyEmail = email;
+            document.getElementById('otp-target-text').textContent = `Masukkan kode OTP yang dikirim ke ${email}`;
+            navigate('verify-otp');
+            showToast('Email belum diverifikasi! Masukkan kode OTP.');
         } else {
             showToast('Email atau password salah!');
         }
@@ -264,7 +314,7 @@ async function handleLogin(e) {
     await loadAllDataFromSupabase();
     const found = usersList.find(u => u.email.toLowerCase() === email);
     if (!found) {
-        showToast('Data profil pengguna tidak ditemukan.');
+        showToast('Data profil tidak ditemukan.');
         return;
     }
 
@@ -295,26 +345,28 @@ async function deleteAccount() {
     window.location.href = 'index.html';
 }
 
-// ==================== FITUR LUPA & RESET KATA SANDI ====================
+// ==================== LUPA & RESET PASSWORD DENGAN OTP ====================
 async function handleForgotPassword(e) {
     e.preventDefault();
     const email = document.getElementById('forgot-email').value.trim().toLowerCase();
 
-    const { error } = await db.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/index.html'
-    });
-
+    const { error } = await db.auth.resetPasswordForEmail(email);
     if (error) {
-        showToast('Gagal mengirim email: ' + error.message);
+        showToast('Gagal mengirim kode: ' + error.message);
         return;
     }
 
-    alert('Tautan reset kata sandi telah dikirim ke ' + email + '. Silakan cek kotak masuk atau folder Spam Anda.');
-    navigate('login');
+    pendingResetEmail = email;
+    document.getElementById('reset-otp-code').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-new-password').value = '';
+    navigate('reset-password');
+    showToast('Kode OTP reset sandi telah dikirim ke email!');
 }
 
 async function handleUpdateNewPassword(e) {
     e.preventDefault();
+    const token = document.getElementById('reset-otp-code').value.trim();
     const newPass = document.getElementById('new-password').value;
     const confirmPass = document.getElementById('confirm-new-password').value;
 
@@ -323,33 +375,34 @@ async function handleUpdateNewPassword(e) {
         return;
     }
 
-    const { data, error } = await db.auth.updateUser({
-        password: newPass
+    const { error: verifyErr } = await db.auth.verifyOtp({
+        email: pendingResetEmail,
+        token: token,
+        type: 'recovery'
     });
 
-    if (error) {
-        showToast('Gagal memperbarui kata sandi: ' + error.message);
+    if (verifyErr) {
+        showToast('Kode OTP salah atau kedaluwarsa!');
         return;
     }
 
-    if (data && data.user && data.user.email) {
-        await db.from('users')
-            .update({ password: newPass })
-            .eq('email', data.user.email.toLowerCase());
+    const { error: updateErr } = await db.auth.updateUser({
+        password: newPass
+    });
+
+    if (updateErr) {
+        showToast('Gagal memperbarui sandi: ' + updateErr.message);
+        return;
     }
+
+    await db.from('users')
+        .update({ password: newPass })
+        .eq('email', pendingResetEmail);
 
     await db.auth.signOut();
-    alert('Kata sandi berhasil diperbarui! Silakan masuk menggunakan kata sandi baru Anda.');
+    alert('Kata sandi berhasil diperbarui! Silakan masuk.');
     navigate('login');
 }
-
-db.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
-        const resetView = document.getElementById('view-reset-password');
-        if (resetView) resetView.classList.add('active');
-    }
-});
 
 // ==================== PROFIL & CHAT BERSAMA ====================
 function switchProfilTab(tabName, btnEl) {
