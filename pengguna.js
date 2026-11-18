@@ -77,10 +77,10 @@ function createKostCardHTML(k) {
 
     return `
         <div class="card">
-            <div class="card-img-wrapper">
+            <div class="card-img-wrapper" style="position: relative;">
                 <img src="${foto}" alt="${k.nama}" class="card-img">
                 <span class="badge">TERSEDIA</span>
-                <button class="favorite-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveKost(${k.id})" title="Simpan Kost" style="position: absolute; top: 10px; right: 10px; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px; color: ${isSaved ? '#e74c3c' : '#ccc'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">&#9829;</button>
+                <button class="favorite-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveKost(${k.id})" title="Simpan Kost" style="position: absolute; top: 12px; right: 12px; background: white; border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 20px; color: ${isSaved ? '#e74c3c' : '#ccc'}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.25); z-index: 5;">&#9829;</button>
             </div>
             <div class="card-body">
                 <h3 class="card-title">${k.nama}</h3>
@@ -144,6 +144,14 @@ function showDetailKost(kostId) {
     const foto = kost.foto || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
     const pemilikEmail = kost.pemilikEmail || kost.pemilik_email || 'pemilik@kostspace.com';
 
+    let fasilitasTeks = kost.fasilitas || 'Wi-Fi, AC, Kamar Mandi Dalam';
+    try {
+        if (typeof fasilitasTeks === 'string' && fasilitasTeks.startsWith('[')) {
+            const parsed = JSON.parse(fasilitasTeks);
+            if (Array.isArray(parsed)) fasilitasTeks = parsed.join(', ');
+        }
+    } catch(e) {}
+
     container.innerHTML = `
         <div class="detail-grid">
             <div>
@@ -157,14 +165,14 @@ function showDetailKost(kostId) {
                 
                 <div style="background:var(--bg-secondary); padding:16px; border-radius:8px; margin-bottom:20px;">
                     <strong>Fasilitas:</strong>
-                    <p style="margin-top:4px; color:var(--text-muted);">${kost.fasilitas || 'Wi-Fi, AC, Kamar Mandi Dalam'}</p>
+                    <p style="margin-top:4px; color:var(--text-muted); text-transform:capitalize;">${fasilitasTeks}</p>
                     <strong style="display:block; margin-top:10px;">Ketersediaan Kamar:</strong>
                     <p style="margin-top:4px; color:var(--text-muted);">${kost.kamar || 'Tersedia'} Kamar</p>
                 </div>
 
                 <div style="display:flex; gap:10px;">
                     <button class="btn btn-primary" style="flex:1;" onclick="openAjukanSewa()">Ajukan Sewa</button>
-                    <button class="btn btn-outline" style="flex:1;" onclick="openChatWithPemilik('${pemilikEmail}', '${kost.nama}', ${kost.id})">&#128172; Hubungi Pemilik</button>
+                    <button class="btn btn-outline" style="flex:1; white-space:nowrap;" onclick="openChatWithPemilik('${pemilikEmail}', '${kost.nama}', ${kost.id})">&#128172; Hubungi Pemilik</button>
                 </div>
             </div>
         </div>
@@ -428,7 +436,7 @@ function renderProfil() {
         }
     }
 
-    // Render Kost Tersimpan
+    // Render Kost Tersimpan (Favorit)
     const savedContainer = document.getElementById('saved-kost-list');
     if (savedContainer) {
         const savedIds = currentUser.savedKostIds || [];
