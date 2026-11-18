@@ -108,7 +108,7 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-// ==================== MENU MOBILE (HP) ====================
+// ==================== MENU MOBILE ====================
 function toggleMobileMenu() {
     const navMenu = document.getElementById('nav-menu');
     if (navMenu) navMenu.classList.toggle('mobile-open');
@@ -153,7 +153,7 @@ function previewUploadedImage(inputEl, previewImgId, placeholderId) {
     });
 }
 
-// ==================== AUTH LANGSUNG ====================
+// ==================== AUTH ====================
 async function handleRegister(e) {
     e.preventDefault();
     const role = document.querySelector('input[name="reg-role"]:checked').value;
@@ -227,7 +227,7 @@ async function deleteAccount() {
     window.location.href = 'index.html';
 }
 
-// ==================== CHAT DAN PESAN ====================
+// ==================== CHAT & PROFIL TABS ====================
 function switchProfilTab(tabName, btnEl) {
     document.querySelectorAll('.profil-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`profil-tab-${tabName}`).classList.add('active');
